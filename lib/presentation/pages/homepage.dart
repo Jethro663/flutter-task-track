@@ -979,7 +979,6 @@ class Homepage extends State<HomePageState> {
                     ],
                   ),
                 ),
-                // Lower-Left Settings Button sa bandang ibaba ng Drawer
                 SafeArea(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
