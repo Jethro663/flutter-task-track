@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../data/models/task_model.dart';
 import '../data/models/task_category_model.dart';
 
@@ -22,6 +23,16 @@ class CoreState extends ChangeNotifier {
   List<TaskItem> taskItems = [];
   
   List<TaskCategory> categories = [];
+
+  // Dagdag para sa Color Palette / Theme
+  Color _themeColor = const Color(0xFF212121);
+
+  Color get themeColor => _themeColor;
+
+  void setThemeColor(Color color) {
+    _themeColor = color;
+    notifyListeners();
+  }
 
   void addTask(TaskItem task) {
     taskItems.add(task);

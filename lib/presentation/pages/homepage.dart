@@ -8,8 +8,9 @@ import '../../data/repositories/category_repository.dart';
 import '../widgets/task_widget.dart';
 import '../widgets/rotating_gradient_background.dart';
 import 'dashboard_page.dart';
+import 'settings_page.dart';
 
-enum HomeView { dashboard, todo, allTasks, categories, calendar }
+enum HomeView { dashboard, todo, allTasks, categories, calendar, settings }
 
 class HomePageState extends StatefulWidget {
   const HomePageState({super.key});
@@ -22,7 +23,6 @@ class Homepage extends State<HomePageState> {
   final TaskRepository _taskRepository = TaskRepository();
   final CategoryRepository _categoryRepository = CategoryRepository();
   
-  // Dashboard set as the initial default startup screen
   HomeView _currentView = HomeView.dashboard;
 
   final TextEditingController _searchController = TextEditingController();
@@ -93,7 +93,7 @@ class Homepage extends State<HomePageState> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF212121),
+                backgroundColor: CoreState().themeColor,
                 foregroundColor: Colors.white,
               ),
               onPressed: () {
@@ -139,7 +139,7 @@ class Homepage extends State<HomePageState> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF212121),
+                backgroundColor: CoreState().themeColor,
                 foregroundColor: Colors.white,
               ),
               onPressed: () {
@@ -235,7 +235,7 @@ class Homepage extends State<HomePageState> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF212121),
+                    backgroundColor: CoreState().themeColor,
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () {
@@ -278,6 +278,8 @@ class Homepage extends State<HomePageState> {
     }
 
     DateTime? selectedDeadline = task.deadline;
+    String selectedPriority = task.priority.isNotEmpty ? task.priority : 'Medium';
+    final List<String> priorityOptions = ['Urgent', 'High', 'Medium', 'Low'];
 
     showDialog(
       context: context,
@@ -286,93 +288,163 @@ class Homepage extends State<HomePageState> {
           builder: (context, setModalState) {
             return AlertDialog(
               backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: const Text("Edit Task", style: TextStyle(fontWeight: FontWeight.bold)),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextField(
-                      controller: nameController,
-                      decoration: const InputDecoration(
-                        labelText: "Task Name",
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: detailsController,
-                      decoration: const InputDecoration(
-                        labelText: "Task Details",
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 2,
-                    ),
-                    const SizedBox(height: 12),
-                    if (categories.isNotEmpty)
-                      DropdownButtonFormField<TaskCategory>(
-                        initialValue: selectedCategory,
-                        decoration: const InputDecoration(
-                          labelText: "Category",
-                          border: OutlineInputBorder(),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: [
+                  Icon(Icons.edit_note, color: CoreState().themeColor, size: 28),
+                  const SizedBox(width: 8),
+                  const Text("Edit Task Details", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
+                ],
+              ),
+              content: SizedBox(
+                width: 400,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text("Task Name", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF424242))),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: nameController,
+                        decoration: InputDecoration(
+                          hintText: "Enter task name",
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                         ),
-                        items: categories.map((category) {
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      const Text("Description / Details", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF424242))),
+                      const SizedBox(height: 6),
+                      TextField(
+                        controller: detailsController,
+                        decoration: InputDecoration(
+                          hintText: "Add notes or details...",
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        ),
+                        maxLines: 3,
+                      ),
+                      const SizedBox(height: 16),
+
+                      const Text("Category", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF424242))),
+                      const SizedBox(height: 6),
+                      if (categories.isNotEmpty)
+                        DropdownButtonFormField<TaskCategory>(
+                          initialValue: selectedCategory,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
+                          items: categories.map((category) {
+                            return DropdownMenuItem(
+                              value: category,
+                              child: Text(category.name),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setModalState(() {
+                              selectedCategory = value;
+                            });
+                          },
+                        )
+                      else
+                        const Text("No categories available.", style: TextStyle(color: Colors.grey)),
+                      
+                      const SizedBox(height: 16),
+
+                      const Text("Priority Level", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF424242))),
+                      const SizedBox(height: 6),
+                      DropdownButtonFormField<String>(
+                        initialValue: selectedPriority,
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        items: priorityOptions.map((priority) {
                           return DropdownMenuItem(
-                            value: category,
-                            child: Text(category.name),
+                            value: priority,
+                            child: Text(priority),
                           );
                         }).toList(),
                         onChanged: (value) {
-                          setModalState(() {
-                            selectedCategory = value;
-                          });
+                          if (value != null) {
+                            setModalState(() {
+                              selectedPriority = value;
+                            });
+                          }
                         },
                       ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: selectedDeadline ?? DateTime.now(),
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2035),
-                        );
-                        if (picked != null) {
-                          setModalState(() {
-                            selectedDeadline = picked;
-                          });
-                        }
-                      },
-                      icon: const Icon(Icons.event, color: Color(0xFF212121)),
-                      label: Text(
-                        selectedDeadline == null
-                            ? "Set Due Date"
-                            : "Due: ${selectedDeadline!.day}/${selectedDeadline!.month}/${selectedDeadline!.year}",
-                        style: const TextStyle(color: Color(0xFF212121)),
+
+                      const SizedBox(height: 20),
+                      const Text("Due Date & Schedule", style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Color(0xFF424242))),
+                      const SizedBox(height: 8),
+                      
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              onPressed: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: selectedDeadline ?? DateTime.now(),
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime(2035),
+                                );
+                                if (picked != null) {
+                                  setModalState(() {
+                                    selectedDeadline = picked;
+                                  });
+                                }
+                              },
+                              icon: Icon(Icons.event, color: CoreState().themeColor),
+                              label: Text(
+                                selectedDeadline == null
+                                    ? "Set Due Date"
+                                    : "Due: ${selectedDeadline!.day}/${selectedDeadline!.month}/${selectedDeadline!.year}",
+                                style: TextStyle(color: CoreState().themeColor, fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                          ),
+                          if (selectedDeadline != null) ...[
+                            const SizedBox(width: 8),
+                            IconButton(
+                              style: IconButton.styleFrom(
+                                backgroundColor: Colors.red.shade50,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              icon: Icon(Icons.close, color: Colors.red.shade700),
+                              tooltip: "Remove Due Date",
+                              onPressed: () {
+                                setModalState(() {
+                                  selectedDeadline = null;
+                                });
+                              },
+                            ),
+                          ],
+                        ],
                       ),
-                    ),
-                    if (selectedDeadline != null)
-                      TextButton(
-                        onPressed: () {
-                          setModalState(() {
-                            selectedDeadline = null;
-                          });
-                        },
-                        child: const Text("Remove Due Date", style: TextStyle(color: Colors.red)),
-                      )
-                  ],
+                    ],
+                  ),
                 ),
               ),
+              actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text("Cancel"),
+                  child: const Text("Cancel", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF212121),
+                    backgroundColor: CoreState().themeColor,
                     foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   ),
                   onPressed: () {
                     if (nameController.text.trim().isNotEmpty) {
@@ -381,12 +453,13 @@ class Homepage extends State<HomePageState> {
                       if (selectedCategory != null) {
                         task.category = selectedCategory!.name;
                       }
+                      task.priority = selectedPriority;
                       task.deadline = selectedDeadline;
                       _taskRepository.updateTask(task);
                       Navigator.pop(context);
                     }
                   },
-                  child: const Text("Save Changes"),
+                  child: const Text("Save Changes", style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             );
@@ -464,13 +537,13 @@ class Homepage extends State<HomePageState> {
                           ),
                         ),
                         selected: isSelected,
-                        selectedColor: const Color(0xFF212121),
+                        selectedColor: CoreState().themeColor,
                         backgroundColor: Colors.white.withValues(alpha: 0.85),
                         checkmarkColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                           side: BorderSide(
-                            color: isSelected ? const Color(0xFF212121) : Colors.black12,
+                            color: isSelected ? CoreState().themeColor : Colors.black12,
                           ),
                         ),
                         onSelected: (selected) {
@@ -650,7 +723,7 @@ class Homepage extends State<HomePageState> {
               color: Colors.white.withValues(alpha: 0.92),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: ListTile(
-                leading: const Icon(Icons.folder_outlined, color: Color(0xFF212121)),
+                leading: Icon(Icons.folder_outlined, color: CoreState().themeColor),
                 title: Text(
                   category.name,
                   style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF212121)),
@@ -721,12 +794,12 @@ class Homepage extends State<HomePageState> {
                   });
                 },
                 eventLoader: getTasksForDay,
-                calendarStyle: const CalendarStyle(
+                calendarStyle: CalendarStyle(
                   selectedDecoration: BoxDecoration(
-                    color: Color(0xFF212121),
+                    color: CoreState().themeColor,
                     shape: BoxShape.circle,
                   ),
-                  todayDecoration: BoxDecoration(
+                  todayDecoration: const BoxDecoration(
                     color: Color(0xFF757575),
                     shape: BoxShape.circle,
                   ),
@@ -737,9 +810,9 @@ class Homepage extends State<HomePageState> {
                       return Positioned(
                         bottom: 2,
                         child: Container(
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Color(0xFF212121),
+                            color: CoreState().themeColor,
                           ),
                           width: 6.0,
                           height: 6.0,
@@ -800,121 +873,152 @@ class Homepage extends State<HomePageState> {
 
   @override
   Widget build(BuildContext context) {
-    String title;
-    Widget body;
-    
-    switch (_currentView) {
-      case HomeView.dashboard:
-        title = "Dashboard";
-        body = DashboardPage();
-        break;
-      case HomeView.todo:
-        title = "To-Do";
-        body = _buildTaskListView(true);
-        break;
-      case HomeView.allTasks:
-        title = "All Tasks";
-        body = _buildTaskListView(false);
-        break;
-      case HomeView.categories:
-        title = "Categories";
-        body = _buildCategoryListView();
-        break;
-      case HomeView.calendar:
-        title = "Calendar";
-        body = _buildCalendarView();
-        break;
-    }
+    return ListenableBuilder(
+      listenable: CoreState(),
+      builder: (context, child) {
+        String title;
+        Widget body;
+        
+        switch (_currentView) {
+          case HomeView.dashboard:
+            title = "Dashboard";
+            body = DashboardPage();
+            break;
+          case HomeView.todo:
+            title = "To-Do";
+            body = _buildTaskListView(true);
+            break;
+          case HomeView.allTasks:
+            title = "All Tasks";
+            body = _buildTaskListView(false);
+            break;
+          case HomeView.categories:
+            title = "Categories";
+            body = _buildCategoryListView();
+            break;
+          case HomeView.calendar:
+            title = "Calendar";
+            body = _buildCalendarView();
+            break;
+          case HomeView.settings:
+            title = "Settings & Profile";
+            body = SettingsPage();
+            break;
+        }
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF212121),
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Color(0xFF212121)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Icon(Icons.check_circle_outline, color: Colors.white, size: 36),
-                  SizedBox(height: 8),
-                  Text("Task Track", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                ],
-              ),
+        return Scaffold(
+          appBar: AppBar(
+            backgroundColor: CoreState().themeColor,
+            iconTheme: const IconThemeData(color: Colors.white),
+            title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+          drawer: Drawer(
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.zero,
+                    children: [
+                      DrawerHeader(
+                        decoration: BoxDecoration(color: CoreState().themeColor),
+                        child: const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Icon(Icons.check_circle_outline, color: Colors.white, size: 36),
+                            SizedBox(height: 8),
+                            Text("Task Track", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.dashboard_outlined),
+                        title: const Text("Dashboard"),
+                        selected: _currentView == HomeView.dashboard,
+                        onTap: () {
+                          setState(() => _currentView = HomeView.dashboard);
+                          Navigator.pop(context);
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.check_box_outline_blank),
+                        title: const Text("To-Do"),
+                        selected: _currentView == HomeView.todo,
+                        onTap: () {
+                          setState(() => _currentView = HomeView.todo);
+                          Navigator.pop(context);
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.list),
+                        title: const Text("All Tasks"),
+                        selected: _currentView == HomeView.allTasks,
+                        onTap: () {
+                          setState(() => _currentView = HomeView.allTasks);
+                          Navigator.pop(context);
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.category_outlined),
+                        title: const Text("Categories"),
+                        selected: _currentView == HomeView.categories,
+                        onTap: () {
+                          setState(() => _currentView = HomeView.categories);
+                          Navigator.pop(context);
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.calendar_month_outlined),
+                        title: const Text("Calendar"),
+                        selected: _currentView == HomeView.calendar,
+                        onTap: () {
+                          setState(() => _currentView = HomeView.calendar);
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                // Lower-Left Settings Button sa bandang ibaba ng Drawer
+                SafeArea(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    child: ListTile(
+                      leading: Icon(Icons.settings_outlined, color: CoreState().themeColor),
+                      title: Text("Settings & Profile", style: TextStyle(fontWeight: FontWeight.bold, color: CoreState().themeColor)),
+                      selected: _currentView == HomeView.settings,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      onTap: () {
+                        setState(() => _currentView = HomeView.settings);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.dashboard_outlined),
-              title: const Text("Dashboard"),
-              selected: _currentView == HomeView.dashboard,
-              onTap: () {
-                setState(() => _currentView = HomeView.dashboard);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.check_box_outline_blank),
-              title: const Text("To-Do"),
-              selected: _currentView == HomeView.todo,
-              onTap: () {
-                setState(() => _currentView = HomeView.todo);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.list),
-              title: const Text("All Tasks"),
-              selected: _currentView == HomeView.allTasks,
-              onTap: () {
-                setState(() => _currentView = HomeView.allTasks);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.category_outlined),
-              title: const Text("Categories"),
-              selected: _currentView == HomeView.categories,
-              onTap: () {
-                setState(() => _currentView = HomeView.categories);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.calendar_month_outlined),
-              title: const Text("Calendar"),
-              selected: _currentView == HomeView.calendar,
-              onTap: () {
-                setState(() => _currentView = HomeView.calendar);
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
-      body: RotatingGradientBackground(
-        child: body,
-      ),
-      floatingActionButton: _currentView == HomeView.dashboard
-          ? null
-          : FloatingActionButton(
-              backgroundColor: const Color(0xFF212121),
-              foregroundColor: Colors.white,
-              onPressed: () {
-                if (_currentView == HomeView.categories) {
-                  _showAddCategoryModal(context);
-                } else if (_currentView == HomeView.calendar && _selectedDay != null) {
-                  _showAddTaskModal(context, _selectedDay!);
-                } else {
-                  Navigator.pushNamed(context, '/create');
-                }
-              },
-              child: const Icon(Icons.add),
-            ),
+          ),
+          body: RotatingGradientBackground(
+            child: body,
+          ),
+          floatingActionButton: _currentView == HomeView.dashboard || _currentView == HomeView.settings
+              ? null
+              : FloatingActionButton(
+                  backgroundColor: CoreState().themeColor,
+                  foregroundColor: Colors.white,
+                  onPressed: () {
+                    if (_currentView == HomeView.categories) {
+                      _showAddCategoryModal(context);
+                    } else if (_currentView == HomeView.calendar && _selectedDay != null) {
+                      _showAddTaskModal(context, _selectedDay!);
+                    } else {
+                      Navigator.pushNamed(context, '/create');
+                    }
+                  },
+                  child: const Icon(Icons.add),
+                ),
+        );
+      },
     );
   }
 }
