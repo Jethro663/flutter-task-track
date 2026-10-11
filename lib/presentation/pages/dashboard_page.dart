@@ -16,9 +16,8 @@ class _DashboardPageState extends State<DashboardPage> {
   final CategoryRepository _categoryRepository = CategoryRepository();
 
   String _selectedCategoryFilter = "All";
-  String _sortBy = "Closest"; // 'Closest', 'Furthest', or 'Priority'
+  String _sortBy = "Closest"; 
 
-  // Helper para sa kulay ng priority badge
   Color _getPriorityColor(String priority) {
     switch (priority.toLowerCase()) {
       case 'urgent':
@@ -69,7 +68,7 @@ class _DashboardPageState extends State<DashboardPage> {
             ],
           ),
           content: SizedBox(
-            width: 500, // Malaking modal para sa Task Details
+            width: 500, 
             child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -242,7 +241,6 @@ class _DashboardPageState extends State<DashboardPage> {
           recentTasks = recentTasks.where((t) => t.category == _selectedCategoryFilter).toList();
         }
 
-        // Sorting logic kasama ang 'Furthest'
         if (_sortBy == "Closest") {
           recentTasks.sort((a, b) => (a.deadline ?? a.dateAdded).compareTo(b.deadline ?? b.dateAdded));
         } else if (_sortBy == "Furthest") {
