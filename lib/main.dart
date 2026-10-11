@@ -31,9 +31,9 @@ class MyApp extends StatelessWidget {
           iconTheme: IconThemeData(color: Colors.white),
         ),
       ),
-      home: const HomePageState(),
+      home:  HomePageState(),
       routes: {
-        "/home": (context) => const HomePageState(),
+        "/home": (context) =>  HomePageState(),
         "/create": (context) => const CreateTaskState(),
       },
     );

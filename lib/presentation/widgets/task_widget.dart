@@ -15,6 +15,21 @@ class WidgetTask extends StatelessWidget {
     required this.onEdit,
   });
 
+  // Helper function for priority colors
+  Color _getPriorityColor(String priority) {
+    switch (priority.toLowerCase()) {
+      case 'urgent':
+        return Colors.red;
+      case 'high':
+        return Colors.orange;
+      case 'medium':
+        return Colors.blue;
+      case 'low':
+      default:
+        return Colors.teal.shade700;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -58,6 +73,7 @@ class WidgetTask extends StatelessWidget {
                   spacing: 6,
                   runSpacing: 4,
                   children: [
+                    // Category Tag
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
@@ -73,6 +89,27 @@ class WidgetTask extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // Color-Coded Priority Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: _getPriorityColor(task.priority).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: _getPriorityColor(task.priority).withValues(alpha: 0.4),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Text(
+                        task.priority,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: _getPriorityColor(task.priority),
+                        ),
+                      ),
+                    ),
+                    // Deadline Tag
                     if (task.deadline != null)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

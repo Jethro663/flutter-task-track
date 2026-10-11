@@ -7,8 +7,9 @@ import '../../data/repositories/task_repository.dart';
 import '../../data/repositories/category_repository.dart';
 import '../widgets/task_widget.dart';
 import '../widgets/rotating_gradient_background.dart';
+import 'dashboard_page.dart';
 
-enum HomeView { todo, allTasks, categories, calendar }
+enum HomeView { dashboard, todo, allTasks, categories, calendar }
 
 class HomePageState extends StatefulWidget {
   const HomePageState({super.key});
@@ -21,7 +22,8 @@ class Homepage extends State<HomePageState> {
   final TaskRepository _taskRepository = TaskRepository();
   final CategoryRepository _categoryRepository = CategoryRepository();
   
-  HomeView _currentView = HomeView.todo;
+  // Dashboard set as the initial default startup screen
+  HomeView _currentView = HomeView.dashboard;
 
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
@@ -34,6 +36,37 @@ class Homepage extends State<HomePageState> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  void _confirmDelete(BuildContext context, String title, String message, VoidCallback onConfirm) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade700,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                onConfirm();
+              },
+              child: const Text("Delete"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showAddCategoryModal(BuildContext context) {
@@ -463,10 +496,6 @@ class Homepage extends State<HomePageState> {
       builder: (context, child) {
         var tasks = _taskRepository.getAllTasks();
 
-        if (onlyUnfinished) {
-          tasks = tasks.where((t) => !t.isFinished).toList();
-        }
-
         if (_selectedCategoryFilter != "All") {
           tasks = tasks.where((t) => t.category == _selectedCategoryFilter).toList();
         }
@@ -478,53 +507,114 @@ class Homepage extends State<HomePageState> {
                 t.content.toLowerCase().contains(query);
           }).toList();
         }
-        
+
+        if (onlyUnfinished) {
+          tasks = tasks.where((t) => !t.isFinished).toList();
+          return Column(
+            children: [
+              _buildSearchAndFilterBar(),
+              Expanded(
+                child: tasks.isEmpty
+                    ? _buildEmptyState("No pending tasks.")
+                    : ListView.builder(
+                        itemCount: tasks.length,
+                        itemBuilder: (context, index) => _buildTaskCard(tasks[index]),
+                      ),
+              ),
+            ],
+          );
+        }
+
+        final pendingTasks = tasks.where((t) => !t.isFinished).toList();
+        final completedTasks = tasks.where((t) => t.isFinished).toList();
+
         return Column(
           children: [
             _buildSearchAndFilterBar(),
             Expanded(
               child: tasks.isEmpty
-                  ? Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        margin: const EdgeInsets.symmetric(horizontal: 24),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.85),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          _searchQuery.isNotEmpty || _selectedCategoryFilter != "All"
-                              ? "No matching tasks found."
-                              : (onlyUnfinished ? "No pending tasks." : "No tasks found."),
-                          style: const TextStyle(fontSize: 16, color: Color(0xFF424242), fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: tasks.length,
-                      itemBuilder: (context, index) {
-                        final task = tasks[index];
-                        return WidgetTask(
-                          task: task,
-                          onToggle: (value) {
-                            if (value != null) {
-                              final updatedTask = task..isFinished = value;
-                              _taskRepository.updateTask(updatedTask);
-                            }
-                          },
-                          onDelete: () {
-                            _taskRepository.removeTask(task);
-                          },
-                          onEdit: () {
-                            _showEditTaskModal(context, task);
-                          },
-                        );
-                      },
+                  ? _buildEmptyState("No tasks found.")
+                  : ListView(
+                      children: [
+                        if (pendingTasks.isNotEmpty) ...[
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(20, 12, 20, 4),
+                            child: Text(
+                              "Pending",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF212121),
+                              ),
+                            ),
+                          ),
+                          ...pendingTasks.map((task) => _buildTaskCard(task)),
+                        ],
+                        if (completedTasks.isNotEmpty) ...[
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(20, 20, 20, 4),
+                            child: Text(
+                              "Completed",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF212121),
+                              ),
+                            ),
+                          ),
+                          ...completedTasks.map((task) => Opacity(
+                                opacity: 0.7,
+                                child: _buildTaskCard(task),
+                              )),
+                        ],
+                      ],
                     ),
             ),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildTaskCard(TaskItem task) {
+    return WidgetTask(
+      task: task,
+      onToggle: (value) {
+        if (value != null) {
+          final updatedTask = task..isFinished = value;
+          _taskRepository.updateTask(updatedTask);
+        }
+      },
+      onDelete: () {
+        _confirmDelete(
+          context,
+          "Delete Task",
+          "Are you sure you want to delete this task? This action cannot be undone.",
+          () {
+            _taskRepository.removeTask(task);
+          },
+        );
+      },
+      onEdit: () {
+        _showEditTaskModal(context, task);
+      },
+    );
+  }
+
+  Widget _buildEmptyState(String message) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        margin: const EdgeInsets.symmetric(horizontal: 24),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          message,
+          style: const TextStyle(fontSize: 16, color: Color(0xFF424242), fontWeight: FontWeight.w500),
+        ),
+      ),
     );
   }
 
@@ -574,7 +664,16 @@ class Homepage extends State<HomePageState> {
                     ),
                     IconButton(
                       icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
-                      onPressed: () => _categoryRepository.removeCategory(category),
+                      onPressed: () {
+                        _confirmDelete(
+                          context,
+                          "Delete Category",
+                          "Are you sure you want to delete this category? This action cannot be undone.",
+                          () {
+                            _categoryRepository.removeCategory(category);
+                          },
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -597,7 +696,8 @@ class Homepage extends State<HomePageState> {
             final date = task.deadline ?? task.dateAdded;
             return date.year == day.year &&
                    date.month == day.month &&
-                   date.day == day.day;
+                   date.day == day.day &&
+                   !task.isFinished;
           }).toList();
         }
 
@@ -676,7 +776,14 @@ class Homepage extends State<HomePageState> {
                             }
                           },
                           onDelete: () {
-                            _taskRepository.removeTask(task);
+                            _confirmDelete(
+                              context,
+                              "Delete Task",
+                              "Are you sure you want to delete this task? This action cannot be undone.",
+                              () {
+                                _taskRepository.removeTask(task);
+                              },
+                            );
                           },
                           onEdit: () {
                             _showEditTaskModal(context, task);
@@ -697,6 +804,10 @@ class Homepage extends State<HomePageState> {
     Widget body;
     
     switch (_currentView) {
+      case HomeView.dashboard:
+        title = "Dashboard";
+        body = DashboardPage();
+        break;
       case HomeView.todo:
         title = "To-Do";
         body = _buildTaskListView(true);
@@ -736,6 +847,15 @@ class Homepage extends State<HomePageState> {
                   Text("Task Track", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                 ],
               ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.dashboard_outlined),
+              title: const Text("Dashboard"),
+              selected: _currentView == HomeView.dashboard,
+              onTap: () {
+                setState(() => _currentView = HomeView.dashboard);
+                Navigator.pop(context);
+              },
             ),
             ListTile(
               leading: const Icon(Icons.check_box_outline_blank),
@@ -779,20 +899,22 @@ class Homepage extends State<HomePageState> {
       body: RotatingGradientBackground(
         child: body,
       ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF212121),
-        foregroundColor: Colors.white,
-        onPressed: () {
-          if (_currentView == HomeView.categories) {
-            _showAddCategoryModal(context);
-          } else if (_currentView == HomeView.calendar && _selectedDay != null) {
-            _showAddTaskModal(context, _selectedDay!);
-          } else {
-            Navigator.pushNamed(context, '/create');
-          }
-        },
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _currentView == HomeView.dashboard
+          ? null
+          : FloatingActionButton(
+              backgroundColor: const Color(0xFF212121),
+              foregroundColor: Colors.white,
+              onPressed: () {
+                if (_currentView == HomeView.categories) {
+                  _showAddCategoryModal(context);
+                } else if (_currentView == HomeView.calendar && _selectedDay != null) {
+                  _showAddTaskModal(context, _selectedDay!);
+                } else {
+                  Navigator.pushNamed(context, '/create');
+                }
+              },
+              child: const Icon(Icons.add),
+            ),
     );
   }
 }

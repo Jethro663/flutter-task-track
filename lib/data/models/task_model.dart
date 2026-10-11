@@ -5,7 +5,8 @@ class TaskItem {
   String category;
   DateTime dateAdded;
   DateTime? deadline; 
-  bool isFinished;  
+  bool isFinished; 
+  String priority; // Added priority string
 
   TaskItem({
     required this.id,
@@ -15,6 +16,7 @@ class TaskItem {
     required this.dateAdded,
     this.deadline,
     this.isFinished = false,
+    this.priority = 'Medium',
   });
 
   Map<dynamic, dynamic> get map {
@@ -25,7 +27,8 @@ class TaskItem {
       "category": category,
       "dateAdded": dateAdded.toIso8601String(),
       "deadline": deadline?.toIso8601String(),
-      "isFinished": isFinished
+      "isFinished": isFinished,
+      "priority": priority, // Added to map
     };
   }
 }

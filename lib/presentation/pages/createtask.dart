@@ -22,6 +22,8 @@ class CreateTaskPage extends State<CreateTaskState> {
   
   TaskCategory? _selectedCategory;
   DateTime? _selectedDeadline;
+  String _selectedPriority = 'Medium'; // Default priority
+  final List<String> _priorities = ['Low', 'Medium', 'High', 'Urgent'];
 
   @override
   void dispose() {
@@ -105,6 +107,7 @@ class CreateTaskPage extends State<CreateTaskState> {
       dateAdded: DateTime.now(),
       deadline: _selectedDeadline,
       isFinished: false,
+      priority: _selectedPriority, // Pass selected priority here
     );
     
     _taskRepository.addTask(newTask);
@@ -185,7 +188,7 @@ class CreateTaskPage extends State<CreateTaskState> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             DropdownButtonFormField<TaskCategory>(
-                              initialValue: _selectedCategory,
+                              value: _selectedCategory,
                               decoration: const InputDecoration(
                                 border: OutlineInputBorder(),
                               ),
@@ -218,6 +221,32 @@ class CreateTaskPage extends State<CreateTaskState> {
                       },
                     ),
                     const SizedBox(height: 12),
+                    // Priority Field Added Here
+                    const Text(
+                      "Priority",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: _selectedPriority,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                      ),
+                      items: _priorities.map((String priority) {
+                        return DropdownMenuItem<String>(
+                          value: priority,
+                          child: Text(priority),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            _selectedPriority = newValue;
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
                     const Text(
                       "Deadline (Optional)",
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),

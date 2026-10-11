@@ -14,7 +14,7 @@ class CoreState extends ChangeNotifier {
       TaskCategory(id: 1, name: "General"),
       TaskCategory(id: 2, name: "Work"),
       TaskCategory(id: 3, name: "Personal"),
-      TaskCategory(id: 4, name: "Urgent"),
+      TaskCategory(id: 4, name: "Finance"),
       TaskCategory(id: 5, name: "Study"),
     ];
   }
