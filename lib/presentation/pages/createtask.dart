@@ -4,6 +4,7 @@ import '../../data/models/task_model.dart';
 import '../../data/models/task_category_model.dart';
 import '../../data/repositories/task_repository.dart';
 import '../../data/repositories/category_repository.dart';
+import '../widgets/rotating_gradient_background.dart';
 
 class CreateTaskState extends StatefulWidget {
   const CreateTaskState({super.key});
@@ -20,6 +21,7 @@ class CreateTaskPage extends State<CreateTaskState> {
   final CategoryRepository _categoryRepository = CategoryRepository();
   
   TaskCategory? _selectedCategory;
+  DateTime? _selectedDeadline;
 
   @override
   void dispose() {
@@ -35,17 +37,25 @@ class CreateTaskPage extends State<CreateTaskState> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("Add Category"),
+          backgroundColor: Colors.white,
+          title: const Text("Add Category", style: TextStyle(fontWeight: FontWeight.bold)),
           content: TextField(
             controller: nameController,
-            decoration: InputDecoration(hintText: "Category Name"),
+            decoration: const InputDecoration(
+              hintText: "Category Name",
+              border: OutlineInputBorder(),
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text("Cancel"),
+              child: const Text("Cancel"),
             ),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF212121),
+                foregroundColor: Colors.white,
+              ),
               onPressed: () {
                 if (nameController.text.trim().isNotEmpty) {
                   final newCategory = TaskCategory(
@@ -61,12 +71,27 @@ class CreateTaskPage extends State<CreateTaskState> {
                   Navigator.pop(context);
                 }
               },
-              child: Text("Save"),
+              child: const Text("Save"),
             ),
           ],
         );
       },
     );
+  }
+
+  Future<void> _pickDeadline() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDeadline ?? now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 10),
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedDeadline = picked;
+      });
+    }
   }
 
   void addTask() {
@@ -78,6 +103,7 @@ class CreateTaskPage extends State<CreateTaskState> {
       content: _detailsController.text.trim(),
       category: _selectedCategory?.name ?? "General",
       dateAdded: DateTime.now(),
+      deadline: _selectedDeadline,
       isFinished: false,
     );
     
@@ -89,95 +115,157 @@ class CreateTaskPage extends State<CreateTaskState> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Create Task"),
+        backgroundColor: const Color(0xFF212121),
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text(
+          "Create Task",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text("Task name", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: "Enter task name"
-              ),
-            ),
-            SizedBox(height: 16),
-            Text("Task Details", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            TextField(
-              controller: _detailsController,
-              maxLines: 3,
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: "Enter details"
-              ),
-            ),
-            SizedBox(height: 16),
-            Text("Category", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            
-            // Listen to CoreState so the dropdown updates when categories are added
-            ListenableBuilder(
-              listenable: CoreState(),
-              builder: (context, child) {
-                final categories = _categoryRepository.getAllCategories();
-                
-                // Ensure _selectedCategory is still valid, else default to null or first
-                if (_selectedCategory != null && !categories.any((c) => c.id == _selectedCategory!.id)) {
-                  _selectedCategory = null;
-                }
-                if (_selectedCategory == null && categories.isNotEmpty) {
-                  _selectedCategory = categories.first;
-                }
-
-                return Column(
+      body: RotatingGradientBackground(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Card(
+              elevation: 4,
+              color: Colors.white.withValues(alpha: 0.95),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    DropdownButtonFormField<TaskCategory>(
-                      value: _selectedCategory,
-                      decoration: InputDecoration(
+                    const Text(
+                      "Task Name",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(
                         border: OutlineInputBorder(),
+                        hintText: "Enter task name",
                       ),
-                      items: categories.map((category) {
-                        return DropdownMenuItem(
-                          value: category,
-                          child: Text(category.name),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Task Details",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _detailsController,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: "Enter details (optional)",
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Category",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    ListenableBuilder(
+                      listenable: CoreState(),
+                      builder: (context, child) {
+                        final categories = _categoryRepository.getAllCategories();
+                        
+                        if (_selectedCategory != null &&
+                            !categories.any((c) => c.id == _selectedCategory!.id)) {
+                          _selectedCategory = null;
+                        }
+                        if (_selectedCategory == null && categories.isNotEmpty) {
+                          _selectedCategory = categories.first;
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            DropdownButtonFormField<TaskCategory>(
+                              initialValue: _selectedCategory,
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
+                              ),
+                              items: categories.map((category) {
+                                return DropdownMenuItem(
+                                  value: category,
+                                  child: Text(category.name),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedCategory = value;
+                                });
+                              },
+                            ),
+                            const SizedBox(height: 6),
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton.icon(
+                                onPressed: _showAddCategoryModal,
+                                icon: const Icon(Icons.add, color: Color(0xFF212121)),
+                                label: const Text(
+                                  "Add New Category",
+                                  style: TextStyle(color: Color(0xFF212121), fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ),
+                          ],
                         );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedCategory = value;
-                        });
                       },
                     ),
-                    SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        onPressed: _showAddCategoryModal,
-                        icon: Icon(Icons.add),
-                        label: Text("Add Category"),
-                      ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      "Deadline (Optional)",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            onPressed: _pickDeadline,
+                            icon: const Icon(Icons.calendar_month, color: Color(0xFF212121)),
+                            label: Text(
+                              _selectedDeadline == null
+                                  ? "Choose Deadline Date"
+                                  : "${_selectedDeadline!.day}/${_selectedDeadline!.month}/${_selectedDeadline!.year}",
+                              style: const TextStyle(color: Color(0xFF212121)),
+                            ),
+                          ),
+                        ),
+                        if (_selectedDeadline != null) ...[
+                          const SizedBox(width: 8),
+                          IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.grey),
+                            tooltip: "Clear deadline",
+                            onPressed: () => setState(() => _selectedDeadline = null),
+                          )
+                        ]
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: addTask,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF212121),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text("Add Task", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    )
                   ],
-                );
-              },
-            ),
-            
-            SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: addTask, 
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: 16)
+                ),
               ),
-              child: Text("Add Task", style: TextStyle(fontSize: 18))
-            )
-          ],
+            ),
+          ),
         ),
       ),
     );

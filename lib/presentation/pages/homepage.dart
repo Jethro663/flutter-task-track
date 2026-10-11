@@ -6,6 +6,7 @@ import '../../data/models/task_category_model.dart';
 import '../../data/repositories/task_repository.dart';
 import '../../data/repositories/category_repository.dart';
 import '../widgets/task_widget.dart';
+import '../widgets/rotating_gradient_background.dart';
 
 enum HomeView { todo, allTasks, categories, calendar }
 
@@ -22,9 +23,18 @@ class Homepage extends State<HomePageState> {
   
   HomeView _currentView = HomeView.todo;
 
-  // Calendar State
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
+  String _selectedCategoryFilter = "All";
+
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay = DateTime.now();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   void _showAddCategoryModal(BuildContext context) {
     final TextEditingController nameController = TextEditingController();
@@ -33,17 +43,26 @@ class Homepage extends State<HomePageState> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("Add Category"),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text("Add Category", style: TextStyle(fontWeight: FontWeight.bold)),
           content: TextField(
             controller: nameController,
-            decoration: InputDecoration(hintText: "Category Name"),
+            decoration: const InputDecoration(
+              hintText: "Category Name",
+              border: OutlineInputBorder(),
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text("Cancel"),
+              child: const Text("Cancel"),
             ),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF212121),
+                foregroundColor: Colors.white,
+              ),
               onPressed: () {
                 if (nameController.text.trim().isNotEmpty) {
                   _categoryRepository.addCategory(
@@ -55,7 +74,7 @@ class Homepage extends State<HomePageState> {
                   Navigator.pop(context);
                 }
               },
-              child: Text("Save"),
+              child: const Text("Save"),
             ),
           ],
         );
@@ -70,17 +89,26 @@ class Homepage extends State<HomePageState> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("Edit Category"),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text("Edit Category", style: TextStyle(fontWeight: FontWeight.bold)),
           content: TextField(
             controller: nameController,
-            decoration: InputDecoration(hintText: "Category Name"),
+            decoration: const InputDecoration(
+              hintText: "Category Name",
+              border: OutlineInputBorder(),
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text("Cancel"),
+              child: const Text("Cancel"),
             ),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF212121),
+                foregroundColor: Colors.white,
+              ),
               onPressed: () {
                 if (nameController.text.trim().isNotEmpty) {
                   _categoryRepository.updateCategory(
@@ -92,7 +120,7 @@ class Homepage extends State<HomePageState> {
                   Navigator.pop(context);
                 }
               },
-              child: Text("Update"),
+              child: const Text("Update"),
             ),
           ],
         );
@@ -116,26 +144,40 @@ class Homepage extends State<HomePageState> {
         return StatefulBuilder(
           builder: (context, setModalState) {
             return AlertDialog(
-              title: Text("Add Task for ${date.day}/${date.month}/${date.year}"),
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text(
+                "Add Task for ${date.day}/${date.month}/${date.year}",
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextField(
                       controller: nameController,
-                      decoration: InputDecoration(hintText: "Task Name"),
+                      decoration: const InputDecoration(
+                        hintText: "Task Name",
+                        border: OutlineInputBorder(),
+                      ),
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     TextField(
                       controller: detailsController,
-                      decoration: InputDecoration(hintText: "Task Details"),
+                      decoration: const InputDecoration(
+                        hintText: "Task Details",
+                        border: OutlineInputBorder(),
+                      ),
                       maxLines: 2,
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     if (categories.isNotEmpty)
                       DropdownButtonFormField<TaskCategory>(
-                        value: selectedCategory,
-                        decoration: InputDecoration(hintText: "Category"),
+                        initialValue: selectedCategory,
+                        decoration: const InputDecoration(
+                          hintText: "Category",
+                          border: OutlineInputBorder(),
+                        ),
                         items: categories.map((category) {
                           return DropdownMenuItem(
                             value: category,
@@ -149,16 +191,20 @@ class Homepage extends State<HomePageState> {
                         },
                       )
                     else
-                      Text("No categories found. Defaulting to 'General'."),
+                      const Text("No categories found. Defaulting to 'General'."),
                   ],
                 ),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: Text("Cancel"),
+                  child: const Text("Cancel"),
                 ),
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF212121),
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: () {
                     if (nameController.text.trim().isNotEmpty) {
                       _taskRepository.addTask(
@@ -168,17 +214,244 @@ class Homepage extends State<HomePageState> {
                           content: detailsController.text.trim(),
                           category: selectedCategory?.name ?? "General",
                           dateAdded: date,
+                          deadline: date,
                           isFinished: false,
                         ),
                       );
                       Navigator.pop(context);
                     }
                   },
-                  child: Text("Save"),
+                  child: const Text("Save"),
                 ),
               ],
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showEditTaskModal(BuildContext context, TaskItem task) {
+    final TextEditingController nameController = TextEditingController(text: task.name);
+    final TextEditingController detailsController = TextEditingController(text: task.content);
+    
+    final categories = _categoryRepository.getAllCategories();
+    TaskCategory? selectedCategory;
+    if (categories.isNotEmpty) {
+      selectedCategory = categories.firstWhere(
+        (c) => c.name == task.category,
+        orElse: () => categories.first,
+      );
+    }
+
+    DateTime? selectedDeadline = task.deadline;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text("Edit Task", style: TextStyle(fontWeight: FontWeight.bold)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: "Task Name",
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: detailsController,
+                      decoration: const InputDecoration(
+                        labelText: "Task Details",
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 12),
+                    if (categories.isNotEmpty)
+                      DropdownButtonFormField<TaskCategory>(
+                        initialValue: selectedCategory,
+                        decoration: const InputDecoration(
+                          labelText: "Category",
+                          border: OutlineInputBorder(),
+                        ),
+                        items: categories.map((category) {
+                          return DropdownMenuItem(
+                            value: category,
+                            child: Text(category.name),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setModalState(() {
+                            selectedCategory = value;
+                          });
+                        },
+                      ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDeadline ?? DateTime.now(),
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2035),
+                        );
+                        if (picked != null) {
+                          setModalState(() {
+                            selectedDeadline = picked;
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.event, color: Color(0xFF212121)),
+                      label: Text(
+                        selectedDeadline == null
+                            ? "Set Due Date"
+                            : "Due: ${selectedDeadline!.day}/${selectedDeadline!.month}/${selectedDeadline!.year}",
+                        style: const TextStyle(color: Color(0xFF212121)),
+                      ),
+                    ),
+                    if (selectedDeadline != null)
+                      TextButton(
+                        onPressed: () {
+                          setModalState(() {
+                            selectedDeadline = null;
+                          });
+                        },
+                        child: const Text("Remove Due Date", style: TextStyle(color: Colors.red)),
+                      )
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancel"),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF212121),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    if (nameController.text.trim().isNotEmpty) {
+                      task.name = nameController.text.trim();
+                      task.content = detailsController.text.trim();
+                      if (selectedCategory != null) {
+                        task.category = selectedCategory!.name;
+                      }
+                      task.deadline = selectedDeadline;
+                      _taskRepository.updateTask(task);
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text("Save Changes"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSearchAndFilterBar() {
+    return ListenableBuilder(
+      listenable: CoreState(),
+      builder: (context, child) {
+        final categories = _categoryRepository.getAllCategories();
+        final categoryOptions = ["All", ...categories.map((c) => c.name)];
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: "Search tasks...",
+                    prefixIcon: const Icon(Icons.search, color: Color(0xFF424242)),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: () {
+                              setState(() {
+                                _searchController.clear();
+                                _searchQuery = "";
+                              });
+                            },
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
+              ),
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: categoryOptions.map((catName) {
+                    final isSelected = _selectedCategoryFilter == catName;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 6.0),
+                      child: FilterChip(
+                        label: Text(
+                          catName,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected ? Colors.white : const Color(0xFF212121),
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFF212121),
+                        backgroundColor: Colors.white.withValues(alpha: 0.85),
+                        checkmarkColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: BorderSide(
+                            color: isSelected ? const Color(0xFF212121) : Colors.black12,
+                          ),
+                        ),
+                        onSelected: (selected) {
+                          setState(() {
+                            _selectedCategoryFilter = catName;
+                          });
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -189,36 +462,67 @@ class Homepage extends State<HomePageState> {
       listenable: CoreState(),
       builder: (context, child) {
         var tasks = _taskRepository.getAllTasks();
+
         if (onlyUnfinished) {
           tasks = tasks.where((t) => !t.isFinished).toList();
         }
-        
-        if (tasks.isEmpty) {
-          return Center(
-            child: Text(
-              onlyUnfinished ? "All caught up!" : "No tasks yet.",
-              style: TextStyle(fontSize: 18, color: Colors.grey),
-            ),
-          );
+
+        if (_selectedCategoryFilter != "All") {
+          tasks = tasks.where((t) => t.category == _selectedCategoryFilter).toList();
         }
 
-        return ListView.builder(
-          itemCount: tasks.length,
-          itemBuilder: (context, index) {
-            final task = tasks[index];
-            return WidgetTask(
-              task: task,
-              onToggle: (value) {
-                if (value != null) {
-                  final updatedTask = task..isFinished = value;
-                  _taskRepository.updateTask(updatedTask);
-                }
-              },
-              onDelete: () {
-                _taskRepository.removeTask(task);
-              },
-            );
-          },
+        if (_searchQuery.trim().isNotEmpty) {
+          final query = _searchQuery.trim().toLowerCase();
+          tasks = tasks.where((t) {
+            return t.name.toLowerCase().contains(query) ||
+                t.content.toLowerCase().contains(query);
+          }).toList();
+        }
+        
+        return Column(
+          children: [
+            _buildSearchAndFilterBar(),
+            Expanded(
+              child: tasks.isEmpty
+                  ? Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        margin: const EdgeInsets.symmetric(horizontal: 24),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          _searchQuery.isNotEmpty || _selectedCategoryFilter != "All"
+                              ? "No matching tasks found."
+                              : (onlyUnfinished ? "No pending tasks." : "No tasks found."),
+                          style: const TextStyle(fontSize: 16, color: Color(0xFF424242), fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: tasks.length,
+                      itemBuilder: (context, index) {
+                        final task = tasks[index];
+                        return WidgetTask(
+                          task: task,
+                          onToggle: (value) {
+                            if (value != null) {
+                              final updatedTask = task..isFinished = value;
+                              _taskRepository.updateTask(updatedTask);
+                            }
+                          },
+                          onDelete: () {
+                            _taskRepository.removeTask(task);
+                          },
+                          onEdit: () {
+                            _showEditTaskModal(context, task);
+                          },
+                        );
+                      },
+                    ),
+            ),
+          ],
         );
       },
     );
@@ -232,31 +536,48 @@ class Homepage extends State<HomePageState> {
         
         if (categories.isEmpty) {
           return Center(
-            child: Text(
-              "No categories yet.",
-              style: TextStyle(fontSize: 18, color: Colors.grey),
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.85),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Text(
+                "No categories yet.",
+                style: TextStyle(fontSize: 16, color: Color(0xFF424242)),
+              ),
             ),
           );
         }
 
         return ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 8),
           itemCount: categories.length,
           itemBuilder: (context, index) {
             final category = categories[index];
-            return ListTile(
-              title: Text(category.name),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.edit, color: Colors.blue),
-                    onPressed: () => _showEditCategoryModal(context, category),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _categoryRepository.removeCategory(category),
-                  ),
-                ],
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              color: Colors.white.withValues(alpha: 0.92),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                leading: const Icon(Icons.folder_outlined, color: Color(0xFF212121)),
+                title: Text(
+                  category.name,
+                  style: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF212121)),
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, color: Colors.blueGrey),
+                      onPressed: () => _showEditCategoryModal(context, category),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
+                      onPressed: () => _categoryRepository.removeCategory(category),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -271,54 +592,77 @@ class Homepage extends State<HomePageState> {
       builder: (context, child) {
         final allTasks = _taskRepository.getAllTasks();
 
-        // Helper to get tasks for a specific day
-        List<TaskItem> _getTasksForDay(DateTime day) {
+        List<TaskItem> getTasksForDay(DateTime day) {
           return allTasks.where((task) {
-            return task.dateAdded.year == day.year &&
-                   task.dateAdded.month == day.month &&
-                   task.dateAdded.day == day.day;
+            final date = task.deadline ?? task.dateAdded;
+            return date.year == day.year &&
+                   date.month == day.month &&
+                   date.day == day.day;
           }).toList();
         }
 
-        final selectedDayTasks = _selectedDay != null ? _getTasksForDay(_selectedDay!) : <TaskItem>[];
+        final selectedDayTasks = _selectedDay != null ? getTasksForDay(_selectedDay!) : <TaskItem>[];
 
         return Column(
           children: [
-            TableCalendar<TaskItem>(
-              firstDay: DateTime.utc(2020, 10, 16),
-              lastDay: DateTime.utc(2030, 3, 14),
-              focusedDay: _focusedDay,
-              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
-              onDaySelected: (selectedDay, focusedDay) {
-                setState(() {
-                  _selectedDay = selectedDay;
-                  _focusedDay = focusedDay;
-                });
-              },
-              eventLoader: _getTasksForDay,
-              calendarBuilders: CalendarBuilders(
-                markerBuilder: (context, date, tasks) {
-                  if (tasks.isNotEmpty) {
-                    return Positioned(
-                      bottom: 1,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.amber,
-                        ),
-                        width: 7.0,
-                        height: 7.0,
-                      ),
-                    );
-                  }
-                  return null;
+            Card(
+              margin: const EdgeInsets.all(12),
+              color: Colors.white.withValues(alpha: 0.93),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              child: TableCalendar<TaskItem>(
+                firstDay: DateTime.utc(2020, 1, 1),
+                lastDay: DateTime.utc(2035, 12, 31),
+                focusedDay: _focusedDay,
+                selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+                onDaySelected: (selectedDay, focusedDay) {
+                  setState(() {
+                    _selectedDay = selectedDay;
+                    _focusedDay = focusedDay;
+                  });
                 },
+                eventLoader: getTasksForDay,
+                calendarStyle: const CalendarStyle(
+                  selectedDecoration: BoxDecoration(
+                    color: Color(0xFF212121),
+                    shape: BoxShape.circle,
+                  ),
+                  todayDecoration: BoxDecoration(
+                    color: Color(0xFF757575),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                calendarBuilders: CalendarBuilders(
+                  markerBuilder: (context, date, tasks) {
+                    if (tasks.isNotEmpty) {
+                      return Positioned(
+                        bottom: 2,
+                        child: Container(
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xFF212121),
+                          ),
+                          width: 6.0,
+                          height: 6.0,
+                        ),
+                      );
+                    }
+                    return null;
+                  },
+                ),
               ),
             ),
-            const SizedBox(height: 8.0),
             Expanded(
               child: selectedDayTasks.isEmpty
-                  ? Center(child: Text("No tasks for this day"))
+                  ? Center(
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text("No tasks scheduled for this day"),
+                      ),
+                    )
                   : ListView.builder(
                       itemCount: selectedDayTasks.length,
                       itemBuilder: (context, index) {
@@ -333,6 +677,9 @@ class Homepage extends State<HomePageState> {
                           },
                           onDelete: () {
                             _taskRepository.removeTask(task);
+                          },
+                          onEdit: () {
+                            _showEditTaskModal(context, task);
                           },
                         );
                       },
@@ -370,20 +717,29 @@ class Homepage extends State<HomePageState> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blueGrey,
-        title: Text(title, style: TextStyle(color: Colors.amber)),
+        backgroundColor: const Color(0xFF212121),
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blueGrey),
-              child: Text("Task Track Menu", style: TextStyle(color: Colors.white, fontSize: 24)),
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Color(0xFF212121)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Icon(Icons.check_circle_outline, color: Colors.white, size: 36),
+                  SizedBox(height: 8),
+                  Text("Task Track", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                ],
+              ),
             ),
             ListTile(
-              leading: Icon(Icons.check_box_outline_blank),
-              title: Text("To-Do"),
+              leading: const Icon(Icons.check_box_outline_blank),
+              title: const Text("To-Do"),
               selected: _currentView == HomeView.todo,
               onTap: () {
                 setState(() => _currentView = HomeView.todo);
@@ -391,8 +747,8 @@ class Homepage extends State<HomePageState> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.list),
-              title: Text("All Tasks"),
+              leading: const Icon(Icons.list),
+              title: const Text("All Tasks"),
               selected: _currentView == HomeView.allTasks,
               onTap: () {
                 setState(() => _currentView = HomeView.allTasks);
@@ -400,8 +756,8 @@ class Homepage extends State<HomePageState> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.category),
-              title: Text("Categories"),
+              leading: const Icon(Icons.category_outlined),
+              title: const Text("Categories"),
               selected: _currentView == HomeView.categories,
               onTap: () {
                 setState(() => _currentView = HomeView.categories);
@@ -409,8 +765,8 @@ class Homepage extends State<HomePageState> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.calendar_month),
-              title: Text("Calendar"),
+              leading: const Icon(Icons.calendar_month_outlined),
+              title: const Text("Calendar"),
               selected: _currentView == HomeView.calendar,
               onTap: () {
                 setState(() => _currentView = HomeView.calendar);
@@ -420,8 +776,12 @@ class Homepage extends State<HomePageState> {
           ],
         ),
       ),
-      body: body,
+      body: RotatingGradientBackground(
+        child: body,
+      ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF212121),
+        foregroundColor: Colors.white,
         onPressed: () {
           if (_currentView == HomeView.categories) {
             _showAddCategoryModal(context);
@@ -431,7 +791,7 @@ class Homepage extends State<HomePageState> {
             Navigator.pushNamed(context, '/create');
           }
         },
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }

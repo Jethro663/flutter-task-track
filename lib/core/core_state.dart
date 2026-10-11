@@ -9,11 +9,18 @@ class CoreState extends ChangeNotifier {
     return _coreState;
   }
   
-  CoreState._internal();
+  CoreState._internal() {
+    categories = [
+      TaskCategory(id: 1, name: "General"),
+      TaskCategory(id: 2, name: "Work"),
+      TaskCategory(id: 3, name: "Personal"),
+      TaskCategory(id: 4, name: "Urgent"),
+      TaskCategory(id: 5, name: "Study"),
+    ];
+  }
 
   List<TaskItem> taskItems = [];
   
-  // Empty initial categories list
   List<TaskCategory> categories = [];
 
   void addTask(TaskItem task) {

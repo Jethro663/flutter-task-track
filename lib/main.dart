@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'core/core_state.dart';
-
 import 'presentation/pages/homepage.dart';
 import 'presentation/pages/createtask.dart';
 
@@ -11,21 +9,33 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: HomePageState(),
-      routes: {
-        "/home": (context) => HomePageState(),
-        "/create":(context) => CreateTaskState()
-
-      },
-
+      debugShowCheckedModeBanner: false,
       title: 'TaskTrack',
-      
-      
+      theme: ThemeData(
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF212121),
+          primary: const Color(0xFF212121),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF212121),
+          foregroundColor: Colors.white,
+          titleTextStyle: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+          iconTheme: IconThemeData(color: Colors.white),
+        ),
+      ),
+      home: const HomePageState(),
+      routes: {
+        "/home": (context) => const HomePageState(),
+        "/create": (context) => const CreateTaskState(),
+      },
     );
   }
 }
-
