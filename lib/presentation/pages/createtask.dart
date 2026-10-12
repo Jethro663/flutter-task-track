@@ -16,13 +16,13 @@ class CreateTaskState extends StatefulWidget {
 class CreateTaskPage extends State<CreateTaskState> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _detailsController = TextEditingController();
-  
+
   final TaskRepository _taskRepository = TaskRepository();
   final CategoryRepository _categoryRepository = CategoryRepository();
-  
+
   TaskCategory? _selectedCategory;
   DateTime? _selectedDeadline;
-  String _selectedPriority = 'Medium'; // Default priority
+  String _selectedPriority = 'Medium';
   final List<String> _priorities = ['Low', 'Medium', 'High', 'Urgent'];
 
   @override
@@ -34,13 +34,16 @@ class CreateTaskPage extends State<CreateTaskState> {
 
   void _showAddCategoryModal() {
     final TextEditingController nameController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.white,
-          title: const Text("Add Category", style: TextStyle(fontWeight: FontWeight.bold)),
+          title: const Text(
+            "Add Category",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           content: TextField(
             controller: nameController,
             decoration: const InputDecoration(
@@ -65,11 +68,11 @@ class CreateTaskPage extends State<CreateTaskState> {
                     name: nameController.text.trim(),
                   );
                   _categoryRepository.addCategory(newCategory);
-                  
+
                   setState(() {
                     _selectedCategory = newCategory;
                   });
-                  
+
                   Navigator.pop(context);
                 }
               },
@@ -98,18 +101,22 @@ class CreateTaskPage extends State<CreateTaskState> {
 
   void addTask() {
     if (_nameController.text.trim().isEmpty) return;
-    
+
     final newTask = TaskItem(
       id: DateTime.now().millisecondsSinceEpoch,
       name: _nameController.text.trim(),
       content: _detailsController.text.trim(),
-      category: _selectedCategory?.name ?? "General",
+      category: _selectedCategory?.name ?? "Uncategorized",
       dateAdded: DateTime.now(),
       deadline: _selectedDeadline,
       isFinished: false,
-      priority: _selectedPriority, // Pass selected priority here
+      priority: _selectedPriority,
+      progress: 0,
+      colorTheme: (DateTime.now().millisecond % 3 == 0)
+          ? 'mint'
+          : (DateTime.now().millisecond % 3 == 1 ? 'lavender' : 'yellow'),
     );
-    
+
     _taskRepository.addTask(newTask);
     Navigator.pop(context);
   }
@@ -132,7 +139,9 @@ class CreateTaskPage extends State<CreateTaskState> {
             child: Card(
               elevation: 4,
               color: Colors.white.withValues(alpha: 0.95),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: Column(
@@ -141,7 +150,10 @@ class CreateTaskPage extends State<CreateTaskState> {
                   children: [
                     const Text(
                       "Task Name",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -154,7 +166,10 @@ class CreateTaskPage extends State<CreateTaskState> {
                     const SizedBox(height: 16),
                     const Text(
                       "Task Details",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     TextField(
@@ -168,51 +183,83 @@ class CreateTaskPage extends State<CreateTaskState> {
                     const SizedBox(height: 16),
                     const Text(
                       "Category",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     ListenableBuilder(
                       listenable: CoreState(),
                       builder: (context, child) {
-                        final categories = _categoryRepository.getAllCategories();
-                        
+                        final categories = _categoryRepository
+                            .getAllCategories();
+
                         if (_selectedCategory != null &&
-                            !categories.any((c) => c.id == _selectedCategory!.id)) {
+                            !categories.any(
+                              (c) => c.id == _selectedCategory!.id,
+                            )) {
                           _selectedCategory = null;
                         }
-                        if (_selectedCategory == null && categories.isNotEmpty) {
+                        if (_selectedCategory == null &&
+                            categories.isNotEmpty) {
                           _selectedCategory = categories.first;
                         }
 
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            DropdownButtonFormField<TaskCategory>(
-                              value: _selectedCategory,
-                              decoration: const InputDecoration(
-                                border: OutlineInputBorder(),
+                            if (categories.isEmpty)
+                              Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF5F5F5),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: const Color(0xFFE0E0E0),
+                                  ),
+                                ),
+                                child: const Text(
+                                  "No categories yet. This task will be Uncategorized.",
+                                  style: TextStyle(
+                                    color: Color(0xFF616161),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              )
+                            else
+                              DropdownButtonFormField<TaskCategory>(
+                                initialValue: _selectedCategory,
+                                decoration: const InputDecoration(
+                                  border: OutlineInputBorder(),
+                                ),
+                                items: categories.map((category) {
+                                  return DropdownMenuItem(
+                                    value: category,
+                                    child: Text(category.name),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedCategory = value;
+                                  });
+                                },
                               ),
-                              items: categories.map((category) {
-                                return DropdownMenuItem(
-                                  value: category,
-                                  child: Text(category.name),
-                                );
-                              }).toList(),
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedCategory = value;
-                                });
-                              },
-                            ),
                             const SizedBox(height: 6),
                             Align(
                               alignment: Alignment.centerLeft,
                               child: TextButton.icon(
                                 onPressed: _showAddCategoryModal,
-                                icon: const Icon(Icons.add, color: Color(0xFF212121)),
+                                icon: const Icon(
+                                  Icons.add,
+                                  color: Color(0xFF212121),
+                                ),
                                 label: const Text(
                                   "Add New Category",
-                                  style: TextStyle(color: Color(0xFF212121), fontWeight: FontWeight.w600),
+                                  style: TextStyle(
+                                    color: Color(0xFF212121),
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),
@@ -221,14 +268,16 @@ class CreateTaskPage extends State<CreateTaskState> {
                       },
                     ),
                     const SizedBox(height: 12),
-                    // Priority Field Added Here
                     const Text(
                       "Priority",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: _selectedPriority,
+                      initialValue: _selectedPriority,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                       ),
@@ -249,7 +298,10 @@ class CreateTaskPage extends State<CreateTaskState> {
                     const SizedBox(height: 16),
                     const Text(
                       "Deadline (Optional)",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Row(
@@ -260,7 +312,10 @@ class CreateTaskPage extends State<CreateTaskState> {
                               padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
                             onPressed: _pickDeadline,
-                            icon: const Icon(Icons.calendar_month, color: Color(0xFF212121)),
+                            icon: const Icon(
+                              Icons.calendar_month,
+                              color: Color(0xFF212121),
+                            ),
                             label: Text(
                               _selectedDeadline == null
                                   ? "Choose Deadline Date"
@@ -274,9 +329,10 @@ class CreateTaskPage extends State<CreateTaskState> {
                           IconButton(
                             icon: const Icon(Icons.clear, color: Colors.grey),
                             tooltip: "Clear deadline",
-                            onPressed: () => setState(() => _selectedDeadline = null),
-                          )
-                        ]
+                            onPressed: () =>
+                                setState(() => _selectedDeadline = null),
+                          ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 24),
@@ -286,10 +342,18 @@ class CreateTaskPage extends State<CreateTaskState> {
                         backgroundColor: const Color(0xFF212121),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
-                      child: const Text("Add Task", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    )
+                      child: const Text(
+                        "Add Task",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../data/models/task_model.dart';
+import '../../data/repositories/task_repository.dart';
+import 'custom_progress_gauges.dart';
+import 'task_details_sheet.dart';
 
 class WidgetTask extends StatelessWidget {
   final TaskItem task;
@@ -15,137 +18,159 @@ class WidgetTask extends StatelessWidget {
     required this.onEdit,
   });
 
-  // Helper function for priority colors
-  Color _getPriorityColor(String priority) {
-    switch (priority.toLowerCase()) {
-      case 'urgent':
-        return Colors.red;
-      case 'high':
-        return Colors.orange;
-      case 'medium':
-        return Colors.blue;
-      case 'low':
+  Color _getCardBackgroundColor() {
+    switch (task.colorTheme.toLowerCase()) {
+      case 'mint':
+        return const Color(0xFFD4F8CE);
+      case 'lavender':
+        return const Color(0xFFE2D9FC);
+      case 'yellow':
+        return const Color(0xFFFEF3C7);
+      case 'coral':
+        return const Color(0xFFFFDDD2);
       default:
-        return Colors.teal.shade700;
+        final hash = task.id.abs() % 3;
+        if (hash == 0) return const Color(0xFFE2D9FC);
+        if (hash == 1) return const Color(0xFFFEF3C7);
+        return const Color(0xFFD4F8CE);
+    }
+  }
+
+  Color _getTextColor() {
+    switch (task.colorTheme.toLowerCase()) {
+      case 'mint':
+        return const Color(0xFF1B381E);
+      case 'lavender':
+        return const Color(0xFF2E1065);
+      case 'yellow':
+        return const Color(0xFF451A03);
+      case 'coral':
+        return const Color(0xFF4C0519);
+      default:
+        return const Color(0xFF1E1E24);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.white.withValues(alpha: 0.92),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onEdit,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: ListTile(
-            leading: Checkbox(
-              value: task.isFinished,
-              activeColor: const Color(0xFF212121),
-              onChanged: onToggle,
-            ),
-            title: Text(
-              task.name,
-              style: TextStyle(
-                decoration: task.isFinished ? TextDecoration.lineThrough : null,
-                fontWeight: FontWeight.w600,
-                color: task.isFinished ? Colors.black45 : Colors.black87,
-              ),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    final bgColor = _getCardBackgroundColor();
+    final textColor = _getTextColor();
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: () {
+            TaskDetailsSheet.show(
+              context,
+              task: task,
+              onEdit: onEdit,
+              onDelete: onDelete,
+              onUpdate: (updatedTask) {
+                TaskRepository().updateTask(updatedTask);
+              },
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (task.content.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    task.content,
-                    style: TextStyle(
-                      color: task.isFinished ? Colors.black38 : Colors.black87,
-                    ),
+                Transform.scale(
+                  scale: 1.1,
+                  child: Checkbox(
+                    value: task.isFinished,
+                    activeColor: textColor,
+                    checkColor: bgColor,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    side: BorderSide(color: textColor.withValues(alpha: 0.5), width: 1.8),
+                    onChanged: onToggle,
                   ),
-                ],
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: [
-                    // Category Tag
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF212121).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        task.category,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF212121),
-                        ),
-                      ),
-                    ),
-                    // Color-Coded Priority Badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: _getPriorityColor(task.priority).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: _getPriorityColor(task.priority).withValues(alpha: 0.4),
-                          width: 0.8,
-                        ),
-                      ),
-                      child: Text(
-                        task.priority,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.name,
                         style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: _getPriorityColor(task.priority),
+                          decoration: task.isFinished ? TextDecoration.lineThrough : null,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 16,
+                          color: task.isFinished ? textColor.withValues(alpha: 0.5) : textColor,
+                          letterSpacing: -0.3,
                         ),
                       ),
-                    ),
-                    // Deadline Tag
-                    if (task.deadline != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.blueGrey.shade50,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.blueGrey.shade200, width: 0.8),
+                      if (task.content.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          task.content,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: task.isFinished
+                                ? textColor.withValues(alpha: 0.4)
+                                : textColor.withValues(alpha: 0.75),
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.event, size: 12, color: Colors.blueGrey.shade700),
-                            const SizedBox(width: 4),
-                            Text(
-                              "${task.deadline!.day}/${task.deadline!.month}/${task.deadline!.year}",
-                              style: TextStyle(fontSize: 11, color: Colors.blueGrey.shade700),
+                      ],
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          AvatarStack(count: task.participantsCount, size: 24),
+                          const SizedBox(width: 8),
+                          Text(
+                            "${task.participantsCount} participants",
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: textColor.withValues(alpha: 0.8),
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: textColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              task.category,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: textColor,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                  ],
+                    ],
+                  ),
                 ),
-              ],
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 20, color: Color(0xFF424242)),
-                  tooltip: "Edit task",
-                  onPressed: onEdit,
-                ),
-                IconButton(
-                  icon: Icon(Icons.delete_outline, size: 20, color: Colors.red.shade400),
-                  tooltip: "Delete task",
-                  onPressed: onDelete,
+                const SizedBox(width: 12),
+                CircularProgressBadge(
+                  percentage: task.isFinished ? 100 : task.progress.toDouble(),
+                  size: 50,
+                  activeColor: textColor,
+                  trackColor: textColor.withValues(alpha: 0.2),
+                  textColor: textColor,
                 ),
               ],
             ),
