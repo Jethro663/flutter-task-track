@@ -1,86 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../core/core_state.dart';
-import '../../core/profile_image_picker.dart';
 import '../../data/repositories/task_repository.dart';
 import '../../data/repositories/category_repository.dart';
 
 class SettingsPage extends StatelessWidget {
   SettingsPage({super.key});
-
   final TaskRepository _taskRepository = TaskRepository();
   final CategoryRepository _categoryRepository = CategoryRepository();
-
-  Future<void> _pickProfileImage(BuildContext context) async {
-    final bytes = await pickProfileImageBytes();
-    if (bytes == null) {
-      if (context.mounted) {
-        _showTopSnackBar(
-          context,
-          "Profile photo upload is available when running on web.",
-        );
-      }
-      return;
-    }
-
-    CoreState().setProfileImage(bytes);
-    if (context.mounted) {
-      _showTopSnackBar(context, "Profile photo updated.");
-    }
-  }
-
-  void _showEditProfileDialog(BuildContext context) {
-    final nameController = TextEditingController(text: CoreState().userName);
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
-          ),
-          title: const Text(
-            "Edit Profile",
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: TextField(
-            controller: nameController,
-            textInputAction: TextInputAction.done,
-            decoration: InputDecoration(
-              labelText: "Account name",
-              prefixIcon: const Icon(Icons.badge_outlined),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            onSubmitted: (_) {
-              CoreState().setUserName(nameController.text);
-              Navigator.pop(context);
-              _showTopSnackBar(context, "Profile name updated.");
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: CoreState().themeColor,
-                foregroundColor: Colors.white,
-              ),
-              onPressed: () {
-                CoreState().setUserName(nameController.text);
-                Navigator.pop(context);
-                _showTopSnackBar(context, "Profile name updated.");
-              },
-              child: const Text("Save"),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   void _showTopSnackBar(BuildContext context, String message) {
     final overlay = Overlay.of(context);
@@ -111,11 +37,7 @@ class SettingsPage extends StatelessWidget {
                 Expanded(
                   child: Text(
                     message,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
                   ),
                 ),
               ],
@@ -137,16 +59,9 @@ class SettingsPage extends StatelessWidget {
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Text(
-            "Delete All Data",
-            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
-          ),
-          content: const Text(
-            "Are you sure you want to delete all tasks and categories? This action is permanent and cannot be undone.",
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text("Delete All Data", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+          content: const Text("Are you sure you want to delete all tasks and categories? This action is permanent and cannot be undone."),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -162,17 +77,14 @@ class SettingsPage extends StatelessWidget {
                 for (var task in List.from(allTasks)) {
                   _taskRepository.removeTask(task);
                 }
-
+                
                 final allCategories = _categoryRepository.getAllCategories();
                 for (var cat in List.from(allCategories)) {
                   _categoryRepository.removeCategory(cat);
                 }
 
                 Navigator.pop(context);
-                _showTopSnackBar(
-                  context,
-                  "All data has been successfully deleted.",
-                );
+                _showTopSnackBar(context, "All data has been successfully deleted.");
               },
               child: const Text("Delete Everything"),
             ),
@@ -193,10 +105,9 @@ class SettingsPage extends StatelessWidget {
         final int totalTasks = tasks.length;
         final int completedTasks = tasks.where((t) => t.isFinished).length;
         final int pendingTasks = tasks.where((t) => !t.isFinished).length;
-        final imageBytes = CoreState().profileImageBytes;
 
         return ListView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 120.0),
           children: [
             const Text(
               'User Profile & History Stats',
@@ -206,6 +117,8 @@ class SettingsPage extends StatelessWidget {
                 color: Color(0xFF212121),
               ),
             ),
+            const SizedBox(height: 16),
+
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
@@ -221,76 +134,30 @@ class SettingsPage extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      CircleAvatar(
-                        radius: 42,
-                        backgroundColor: CoreState().themeColor,
-                        backgroundImage: imageBytes == null
-                            ? null
-                            : MemoryImage(imageBytes),
-                        child: imageBytes == null
-                            ? Text(
-                                CoreState().userName.trim().isEmpty
-                                    ? "T"
-                                    : CoreState().userName
-                                          .trim()[0]
-                                          .toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 32,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                              )
-                            : null,
-                      ),
-                      Material(
-                        color: CoreState().themeColor,
-                        shape: const CircleBorder(),
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.photo_camera_outlined,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                          tooltip: "Choose profile photo",
-                          onPressed: () => _pickProfileImage(context),
-                        ),
-                      ),
-                    ],
+                  CircleAvatar(
+                    radius: 36,
+                    backgroundColor: CoreState().themeColor,
+                    child: const Icon(Icons.person, size: 40, color: Colors.white),
                   ),
                   const SizedBox(height: 12),
-                  Text(
-                    CoreState().userName,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF212121),
-                    ),
+                  const Text(
+                    "Productivity User",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF212121)),
                   ),
                   const SizedBox(height: 4),
-                  TextButton.icon(
-                    onPressed: () => _showEditProfileDialog(context),
-                    icon: const Icon(Icons.edit_outlined, size: 17),
-                    label: const Text("Edit account name"),
-                    style: TextButton.styleFrom(
-                      foregroundColor: CoreState().themeColor,
-                      textStyle: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
+                  const Text(
+                    "TaskTrack Active Member",
+                    style: TextStyle(fontSize: 13, color: Colors.grey),
                   ),
                   const Divider(height: 32, thickness: 0.8),
-
+                  
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
                       _buildProfileStat("Total", totalTasks.toString()),
                       _buildProfileStat("Completed", completedTasks.toString()),
                       _buildProfileStat("Pending", pendingTasks.toString()),
-                      _buildProfileStat(
-                        "Categories",
-                        categories.length.toString(),
-                      ),
+                      _buildProfileStat("Categories", categories.length.toString()),
                     ],
                   ),
                 ],
@@ -325,11 +192,7 @@ class SettingsPage extends StatelessWidget {
                 children: [
                   const Text(
                     "Color Palette",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF212121),
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF212121)),
                   ),
                   const SizedBox(height: 6),
                   const Text(
@@ -340,26 +203,10 @@ class SettingsPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildColorOption(
-                        context,
-                        "Classic Dark",
-                        const Color(0xFF212121),
-                      ),
-                      _buildColorOption(
-                        context,
-                        "Ocean Blue",
-                        const Color(0xFF1565C0),
-                      ),
-                      _buildColorOption(
-                        context,
-                        "Emerald",
-                        const Color(0xFF2E7D32),
-                      ),
-                      _buildColorOption(
-                        context,
-                        "Sunset",
-                        const Color(0xFFD84315),
-                      ),
+                      _buildColorOption(context, "Classic Dark", const Color(0xFF212121)),
+                      _buildColorOption(context, "Ocean Blue", const Color(0xFF1565C0)),
+                      _buildColorOption(context, "Emerald", const Color(0xFF2E7D32)),
+                      _buildColorOption(context, "Sunset", const Color(0xFFD84315)),
                     ],
                   ),
                 ],
@@ -395,11 +242,7 @@ class SettingsPage extends StatelessWidget {
                 children: [
                   const Text(
                     "Danger Zone",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red),
                   ),
                   const SizedBox(height: 8),
                   const Text(
@@ -414,15 +257,10 @@ class SettingsPage extends StatelessWidget {
                         backgroundColor: Colors.red.shade700,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       icon: const Icon(Icons.delete_forever),
-                      label: const Text(
-                        "Delete All Data",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
+                      label: const Text("Delete All Data", style: TextStyle(fontWeight: FontWeight.bold)),
                       onPressed: () => _confirmDeleteAllData(context),
                     ),
                   ),
@@ -440,11 +278,7 @@ class SettingsPage extends StatelessWidget {
       children: [
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF212121),
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF212121)),
         ),
         const SizedBox(height: 2),
         Text(
@@ -456,7 +290,7 @@ class SettingsPage extends StatelessWidget {
   }
 
   Widget _buildColorOption(BuildContext context, String name, Color color) {
-    final isSelected = CoreState().themeColor == color;
+    final isSelected = CoreState().themeColor.toARGB32() == color.toARGB32();
 
     return InkWell(
       onTap: () {
@@ -472,9 +306,7 @@ class SettingsPage extends StatelessWidget {
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
-              border: isSelected
-                  ? Border.all(color: Colors.white, width: 3)
-                  : null,
+              border: isSelected ? Border.all(color: Colors.white, width: 3) : null,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.2),
@@ -483,16 +315,14 @@ class SettingsPage extends StatelessWidget {
                 ),
               ],
             ),
-            child: isSelected
-                ? const Icon(Icons.check, color: Colors.white, size: 22)
-                : null,
+            child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 22) : null,
           ),
           const SizedBox(height: 6),
           Text(
             name,
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              fontSize: 11, 
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, 
               color: const Color(0xFF424242),
             ),
           ),

@@ -386,7 +386,6 @@ class Homepage extends State<HomePageState> {
                         ),
                       ),
                       const SizedBox(height: 16),
-
                       const Text(
                         "Description / Details",
                         style: TextStyle(
@@ -411,7 +410,6 @@ class Homepage extends State<HomePageState> {
                         maxLines: 3,
                       ),
                       const SizedBox(height: 16),
-
                       const Text(
                         "Category",
                         style: TextStyle(
@@ -446,7 +444,6 @@ class Homepage extends State<HomePageState> {
                           },
                         ),
                       const SizedBox(height: 16),
-
                       const Text(
                         "Priority Level",
                         style: TextStyle(
@@ -482,7 +479,6 @@ class Homepage extends State<HomePageState> {
                         },
                       ),
                       const SizedBox(height: 16),
-
                       const Text(
                         "Due Date",
                         style: TextStyle(
@@ -1087,10 +1083,17 @@ class Homepage extends State<HomePageState> {
           }).toList();
         }
 
-        final heroTask = tasks.isNotEmpty ? tasks.first : null;
-        final remainingTasks = tasks.length > 1
-            ? tasks.sublist(1)
-            : <TaskItem>[];
+        final allTasks = _taskRepository.getAllTasks();
+        var activeTasksForHero = allTasks.where((t) => !t.isFinished).toList();
+
+        if (_selectedCategoryFilter != "All") {
+          activeTasksForHero = activeTasksForHero
+              .where((t) => t.category == _selectedCategoryFilter)
+              .toList();
+        }
+
+        final heroTask = activeTasksForHero.isNotEmpty ? activeTasksForHero.first : null;
+        final remainingTasks = tasks.where((t) => t != heroTask).toList();
 
         return ListView(
           padding: const EdgeInsets.only(bottom: 96),
